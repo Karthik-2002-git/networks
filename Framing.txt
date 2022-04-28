@@ -1,0 +1,108 @@
+Server.py----------------------------------------------------------------------
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Mar 23 11:40:31 2022
+
+@author: 20pw15
+"""
+
+import socket
+
+s=socket.socket()
+host = socket.gethostname()
+port=12345
+
+s.bind((host, port))
+s.listen(5)
+
+while True:
+    c, addr = s.accept()
+    print('Got connection from',addr)
+    while True:
+        
+        bs = c.recv(1024).decode()
+        print(bs)
+        
+        for i in bs.split():
+            if '111110' in i:
+                bs=bs.replace('111110','11111')
+
+        uts=''
+        for i in bs.split():
+            if i=='10100011':
+                uts+='ESC '
+            elif i=='01111110':
+                uts+='FLAG '
+            else:
+                uts+=chr(int(i,2))+' '
+        
+        
+        uts=uts.replace('ESC FLAG','FLAG')
+        uts=uts.replace('ESC ESC','ESC')
+        uts=uts.strip(' ')
+        
+        print(uts)
+        k="Done"
+        c.send(k.encode())
+        break
+    
+s.close()        
+
+----------------------------------------------------------------------------------------------------------------
+
+client.py------------------------------------------------------------------------------------------------------
+
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Mar 23 11:32:42 2022
+
+@author: 20pw15
+"""
+import socket
+
+c=socket.socket()
+host=socket.gethostname()
+port=12345
+
+print(host)
+        
+c.connect((host,port))
+while(1):
+    s=input()
+    ss=''
+    for i in s.split(' '):
+        if i=='ESC':
+            ss+='ESC ESC ' 
+        elif i=='FLAG':
+            ss+='ESC FLAG '
+        else:
+            ss+=i+' '
+    bs=''
+    for i in ss.split():
+        if i=='ESC':
+            bs+='10100011 '
+        elif i=='FLAG':
+            bs+='01111110 '
+        elif ord(i)>=65 and ord(i)<=90:
+            #print(bin(ord(i))[2:])
+            bs+=format(int(bin(ord(i))[2:]),'#0008')+' '
+            
+    bs=bs.strip(' ')
+    print(bs)
+    for i in bs.split():
+        
+        if '11111' in i:
+            #print(i)
+            bs=bs.replace('11111','111110')
+            
+    print(bs)
+    
+    c.send(bs.encode())
+    s_msg=c.recv(1024).decode()
+    print(s_msg)
+    if(s_msg=="Done"):
+        print("Connection end")
+        break
+c.close()
+    
+-------------------------------------------------------------------------------------------------------------
