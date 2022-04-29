@@ -1,0 +1,109 @@
+#server
+import socket
+import threading
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.bind((socket.gethostbyname(socket.gethostname()), 5959))
+print("[SERVER] LISTENING")
+BUFFER_SIZE = 1024
+
+file = open('db.txt', 'r')
+clients = file.readlines()
+d = {}
+for i in clients:
+    si = i.strip('\n').split(':')
+    d[si[0]] = float(si[1])
+file.close()
+
+
+def handle_client(conn, addr):
+    msg = conn.recv(1024)
+    msg = msg.decode()
+    print("[SERVER] Connected with : ", addr)
+    connected=True
+    if msg not in d:
+        d[msg] = 0
+        print(f'[SERVER] Account created for \"{msg}\"')
+    else:
+        print("[SERVER] Account already exists.")
+    while connected:
+        msg = conn.recv(1024)
+        name, amt, choice = msg.decode().split(',')
+        if choice == '1':
+            amt = float(amt)
+            if d[name] - amt > 0:
+                d[name] -= float(amt)
+                conn.send(
+                    f'[SERVER] Withdraw successful!\nCurrent balance: {d[name]}'
+                    .encode())
+                file = open('db.txt', 'w')
+                for i in d:
+                    file.write(f'{i}:{d[i]}\n')
+                file.close()
+            else:
+                conn.send('[SERVER] Insufficient funds!'.encode())
+
+        elif choice == '2':
+            d[name] += float(amt)
+            conn.send(
+                f'[SERVER] Deposit successful!\nCurrent balance: {d[name]}'.
+                encode())
+            file = open('db.txt', 'w')
+            for i in d:
+                file.write(f'{i}:{d[i]}\n')
+            file.close()
+        else:
+            connected=False
+    s.close()
+
+
+def start():
+    s.listen()
+    while True:
+        conn, addr = s.accept()
+        thread = threading.Thread(target=handle_client, args=(conn, addr))
+        thread.start()
+        print(f"[ACTIVE CONNECTIONS] {threading.activeCount()}")
+
+start()
+
+########################################################
+#client
+
+import socket
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+serverAddr = (socket.gethostname(), 5959)
+s.connect(serverAddr)
+name = input('Enter name:')
+s.send(name.encode())
+
+while True:
+    print("\n\n1. Withdraw\n2. Deposit\n3. Exit")
+    choice = int(input("Enter your choice: "))
+    if choice == 1:
+        amt = input("Enter amount to withdraw: ")
+        if amt.isdecimal():
+            s.send(f'{name},{amt},{choice}'.encode())
+            reply = s.recv(1024)
+            print(reply.decode())
+        else:
+            print("\nInvalid Entry!")
+            continue
+    elif choice == 2:
+        amt = input("Enter amount to deposit: ")
+        if amt.isdecimal():
+            s.send(f'{name},{amt},{choice}'.encode())
+            reply = s.recv(1024)
+            print(reply.decode())
+        else:
+            print("\nInvalid Entry!")
+            continue
+    elif choice == 3:
+        s.send(f'{name},{0},{choice}'.encode())
+        break
+    else:
+        print("\nEnter a valid choice.")
+
+
+
