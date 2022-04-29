@@ -2,56 +2,53 @@
 
 sender
 import socket
+from threading import *
 
-s = socket.socket()
-host = socket.gethostname()
-port = 65456
-s.connect((host, port))
-s.settimeout(1)
+serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+host = "localhost"
+port = 8000
 
-sn = 0
-request = ['0', '1', '0', '1', '0', '1']
-canSend = True
-while (sn < len(request)):
-    if (canSend):
-        s.send(request[sn].encode())
-        canSend = False
-        sn += 1
-        if (sn == len(request)):
-            break
-    try:
-        ACK = s.recv(1024).decode()
-        print(f"Received ACK {ACK}")
-    except:
-        sn -= 1
-        print("Correct ACK not received. Initiating retransmission...")
-    canSend = True
-print("Transmission ended.")
-s.close()
+serversocket.bind((host, port))
+
+class client(Thread):
+    def __init__(self, socket, address):
+        Thread.__init__(self)
+        self.sock = socket
+        self.addr = address
+        self.start()
+
+    def run(self):
+        while 1:
+            r=input("Send data -->")
+            clientsocket.send(r.encode())
+            print(clientsocket.recv(1024).decode())
+            
+
+serversocket.listen(5)
+print ('Sender ready and is listening')
+while (True):
+
+    #to accept all incoming connections
+    clientsocket, address = serversocket.accept()
+    print("Receiver "+str(address)+" connected")
+    #create a different thread for every 
+    #incoming connection 
+    client(clientsocket, address)
 
 '''Reciever:'''
 import socket
 
-s = socket.socket()
-host = socket.gethostname()
-port = 65456
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+host ="localhost"
+port =8000
+s.connect((host,port))
 
-s.bind((host, port))
-s.listen(5)
-c, addr = s.accept()
 
-arrival = ['0', '1', '0', '1', '0', '1']
-rn = 0
-iteration = 0
-while (rn < len(arrival)):
-    frame = c.recv(1).decode()
-    print(frame)
-    rn += 1
-    iteration += 1
-    if rn < len(arrival):
-        print(f"Sending ACK {arrival[rn]}...")
-        if iteration != 2 and iteration != 5:
-            c.send(arrival[rn].encode())
-    else:
-        break
-c.close()
+
+while 2:
+   data=s.recv(1024).decode()
+   print("Received --> "+data)
+   str="Acknowledgement: Message Received"
+   s.send(str.encode())
+
+s.close ()
