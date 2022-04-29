@@ -1,5 +1,6 @@
-#sender
+'''Stop and wait arq'''
 
+sender
 import socket
 
 s = socket.socket()
@@ -28,9 +29,7 @@ while (sn < len(request)):
 print("Transmission ended.")
 s.close()
 
-########################################################################################
-
-#receiver
+'''Reciever:'''
 import socket
 
 s = socket.socket()
